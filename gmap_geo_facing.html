@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Google Map</title>
+	<script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDEDAGnbN8h4C6IygWGkc9oxjLBia3AH0M&v=3.exp&libraries=places&callback=mapsCallback"
+	  type="text/javascript"></script>
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false&libraries=drawing">
+	</script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<style>
+		* {
+			padding: 0;
+			margin: 0;
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			-o-box-sizing: border-box;
+			box-sizing: border-box;
+		}
+
+		.d-ui-container {
+			text-align: justify;
+			padding: 8px;
+			background: beige;
+		}
+
+		.ui-header-bar {
+			position: fixed;
+			z-index: 99;
+		}
+
+		
+		/*theme css*/
+
+		.ui-header-bar {
+			box-shadow: 0 2px 5px rgba(0, 0, 0, .26);
+			background-color: #7F6F4E;
+		}
+
+		.location p {
+			color: #fff;
+		}
+
+		.searchbox-input {
+			color: #fff;
+			background-color: inherit;
+		}
+
+		.srch-icon {
+			color: #fff;
+			background-color: inherit;
+		}
+
+		#d-container {
+			margin-top: 48px;
+		}
+
+		.circle {
+			position: fixed;
+			left: 113px;
+			top: 16px;
+		}
+
+	</style>
+</head>
+
+<body>
+	<div class="div-header">
+		<header class="ui-header-bar">
+			<span>
+				<button class="circle">Circle</button>
+			</span>
+		</header>
+	</div>
+	<div class="d-ui-container" id="d-container">
+		<div id="googleMap" style="position:absolute;top:0px;left:0;right:0;bottom:0;"></div>
+		<div id="directions_panel"></div>
+		<div id="about-us"></div>
+	</div>
+	<script>
+
+		var PAGE_OPTIONS = {
+			context: {},
+			settings: {
+				apiKey: "AIzaSyDEDAGnbN8h4C6IygWGkc9oxjLBia3AH0M",
+				zoom: 18,
+				mapEntities: [],
+				defaultLatLng: null,
+				onClose: null,
+				onSuccess: null
+			},
+			elemId: '',
+			loadError: null,
+			loadSuccess: null
+		};
+
+		var PAGE_DATA = {
+			map: null,
+			infowindow: null,
+			latLngForCircle: {},
+			deviceId: "",
+			selectedDate: ""
+		};
+
+		$('document').ready(function () {
+			init();
+
+		}); //document.ready()
+
+		/*Initialize the map*/
+		function init() {
+		
+			// PAGE_DATA['deviceId'] = "" + $('.gp2 option:selected').val();
+			
+			bindEvent();
+		} /*End init()*/
+
+		/*This is a global function that will callback by google when map is loaded*/
+		window.mapsCallback = function () {
+			showMap();
+		};
+
+		function bindEvent() {
+			$('.circle').click(function () {
+				createCircle();
+			});
+
+		}
+
+		/*This function is used to create google map object and show*/
+		function showMap() {
+			/*create map object*/
+			var mapCenter;
+
+			// mapCenter = new google.maps.LatLng("19.016338", "73.104749");
+			mapCenter = new google.maps.LatLng("19.208374", "72.975717");
+			
+			PAGE_DATA.map = new google.maps.Map(document.getElementById('googleMap'), {
+				zoom: PAGE_OPTIONS.settings.zoom,
+				center: mapCenter,
+				mapTypeId: google.maps.MapTypeId.TERRAIN
+			});
+
+			bindClickEvent();
+		} /*end showMap()*/
+
+
+		// This will gives to latitude and longitude on click event
+		function bindClickEvent() {
+			google.maps.event.addListener(PAGE_DATA.map, "click", function (e) {
+				//lat and lng is available in e object
+				var temp = e.latLng;
+				PAGE_DATA.latLngForCircle = {
+					"lat": temp.lat(),
+					"lng": temp.lng()
+				};
+				alert("current latitute---" + PAGE_DATA.latLngForCircle['lat'] + " longitute----" + PAGE_DATA.latLngForCircle[
+					'lng']);
+				placeMarker(temp);
+			});
+		} /*End bindClickEvent()*/
+
+		// This will show the location marker
+		function placeMarker(location) {
+			var infowindow = new google.maps.InfoWindow();
+			
+			var marker = new google.maps.Marker({
+				position: location,
+				map: PAGE_DATA.map
+			});
+
+			google.maps.event.addListener(marker, 'click', (function (marker) {
+				return function () {
+
+					var geoCoder = new google.maps.Geocoder();
+					geoCoder.geocode({
+						'location': {
+							"lat": location.lat(),
+							"lng": location.lng()
+						}
+					}, function (results, status) {
+						//console.log("geoCODER Staus:"+status);
+						if (status === google.maps.GeocoderStatus.OK) {
+
+							var addText = "" + results[1].formatted_address;
+
+							infowindow.setContent(addText);
+							infowindow.open(PAGE_DATA.map, marker);
+						}
+					});
+
+				}
+			})(marker));
+		} //placeMarker()
+
+
+		function createCircle() {
+			var cityCircle = new google.maps.Circle({
+				strokeColor: '#FF0000',
+				strokeOpacity: 0.8,
+				strokeWeight: 2,
+				fillColor: '#FF0000',
+				fillOpacity: 0.35,
+				map: PAGE_DATA.map,
+				center: PAGE_DATA.latLngForCircle,
+				radius: 100,
+				editable: true,
+				draggable: true
+			});
+			google.maps.event.addListener(cityCircle, 'radius_changed', function () {
+				alert("circle radius --  " + this.getRadius());
+			})
+			google.maps.event.addListener(cityCircle, 'dragend', function (evt) {
+				// alert("curr lat long--" + evt.latLng.lat() + " lon---" + evt.latLng.lng());
+				alert("curr lat long--" + cityCircle.getCenter().lat() + " lon---" + cityCircle.getCenter().lng());
+				placeMarker(cityCircle.getCenter());
+			});
+		}
+	</script>
+</body>
+
+</html>
